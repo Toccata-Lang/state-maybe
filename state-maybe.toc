@@ -9,10 +9,11 @@
                  (reduce-args args new-s (cons result final-result)))))))
 
 (defn -comp* [mv mvs s]
+  (assert (instance? List mvs))
   (let [x (mv s)]
     (or x
-        (let [mv (first mvs)]
-          (and mv (-comp* (extract mv) (rest mvs) s))))))
+        (let [first-mv (first mvs)]
+          (and first-mv (-comp* (extract first-mv) (rest mvs) s))))))
 
 (deftype new-sm [invoke-fn]
   Stringable
@@ -42,7 +43,7 @@
                          (and y (let [[f s] (extract y)]
                                   (or (and (empty? results)
                                            (maybe [(f) s]))
-                                      (maybe [(apply f results) s]))))))))))
+                                      (maybe [(apply f (seq results)) s]))))))))))
   (flat-map [ev f]
     (new-sm (fn [s]
               (let [x (invoke-fn s)]
@@ -53,7 +54,7 @@
   (zero [_] (new-sm (fn [_] nothing)))
   (comp* [mv mvs]
     (new-sm (fn [s]
-              (-comp* mv mvs s)))))
+              (-comp* mv (seq mvs) s)))))
 
 (def state-maybe
   (reify
@@ -125,19 +126,20 @@
                                 (maybe [old-v new-s])))))))))
 
 (defn recur-fn [f as s]
+  (assert (instance? Vector as))
   (let [x (f s)]
     (or (and (= nothing x)
              (maybe [as s]))
         (let [[v ss] (extract x)]
-          (recur-fn f (cons v as) ss)))))
+          (recur-fn f (conj as v) ss)))))
 
 (defn recur [mv]
   (new-sm (fn [s]
             (let [x (mv s)]
               (and x (let [[v ss] (extract x)
-                           y (recur-fn (.invoke-fn mv) (list v) ss)]
+                           y (recur-fn (.invoke-fn mv) [v] ss)]
                        (and y (let [[vs s] (extract y)]
-                                (maybe [(reverse vs) s])))))))))
+                                (maybe [vs s])))))))))
 
 (defn when [val]
   (new-sm (fn [s]
