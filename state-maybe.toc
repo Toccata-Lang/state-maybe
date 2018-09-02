@@ -43,7 +43,7 @@
                          (and y (let [[f s] (extract y)]
                                   (or (and (empty? results)
                                            (maybe [(f) s]))
-                                      (maybe [(apply f (seq results)) s]))))))))))
+                                      (maybe [(apply* f (seq results)) s]))))))))))
   (flat-map [ev f]
     (new-sm (fn [s]
               (let [x (invoke-fn s)]
