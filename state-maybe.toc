@@ -34,7 +34,7 @@
   (wrap [_ v]
     (new-sm (fn [s]
               (maybe [v s]))))
-  (apply* [fv args]
+  (apply [fv args]
     (new-sm (fn [s]
               (let [x (or (map (empty? args) (constantly [[] s]))
                           (reduce-args args s empty-list))]
@@ -43,7 +43,7 @@
                          (and y (let [[f s] (extract y)]
                                   (or (and (empty? results)
                                            (maybe [(f) s]))
-                                      (maybe [(apply* f (seq results)) s]))))))))))
+                                      (maybe [(apply f (seq results)) s]))))))))))
   (flat-map [ev f]
     (new-sm (fn [s]
               (let [x (invoke-fn s)]
