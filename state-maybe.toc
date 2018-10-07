@@ -58,6 +58,10 @@
 
 (def state-maybe
   (reify
+    Type
+    (type-name [_]
+      "*state-maybe wrapper*")
+
     Function
     (invoke [_ v]
       (new-sm (fn [s]
@@ -77,16 +81,16 @@
 
 (defn get-val
   ([k]
-     (new-sm (fn [s]
-               (let [x (get s k)]
-                 (and x (let [v (extract x)]
-                          (maybe [v s])))))))
+   (new-sm (fn [s]
+             (let [x (get s k)]
+               (and x (let [v (extract x)]
+                        (maybe [v s])))))))
   ([k nf]
-     (new-sm (fn [s]
-               (or (let [x (get s k)]
-                     (and x (let [v (extract x)]
-                              (maybe [v s]))))
-                   (maybe [nf s]))))))
+   (new-sm (fn [s]
+             (or (let [x (get s k)]
+                   (and x (let [v (extract x)]
+                            (maybe [v s]))))
+                 (maybe [nf s]))))))
 
 (defn set-val [k v]
   (new-sm (fn [s]
