@@ -62,6 +62,11 @@
     (type-name [_]
       "*state-maybe wrapper*")
 
+    Container
+    (apply [_ [v]]
+      (new-sm (fn [s]
+                (maybe [v s]))))
+
     Function
     (invoke [_ v]
       (new-sm (fn [s]
@@ -85,6 +90,7 @@
              (let [x (get s k)]
                (and x (let [v (extract x)]
                         (maybe [v s])))))))
+
   ([k nf]
    (new-sm (fn [s]
              (or (let [x (get s k)]
