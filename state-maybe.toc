@@ -83,6 +83,9 @@
     Composition
     (zero [_] (new-sm (fn [_] nothing)))))
 
+(def zero-sm
+  (zero state-maybe))
+
 (defn lift [f]
   (fn [& args]
     (new-sm (fn [s]
