@@ -1,14 +1,14 @@
 
 ;; state-maybe monad with lazy comp*
 
-(defn reduce-args [[arg & args] s final-result]
+(defn reduce-args [args s final-result]
   (assert (instance? Vector final-result))
 
-  (let [x (arg s)]
-    (and x (let [[result new-s] (extract x)]
-             (or (and (=* 0 (list-count args))
-                      (maybe [(conj final-result result) new-s]))
-                 (reduce-args args new-s (conj final-result result)))))))
+  (or (and (empty? args)
+           (maybe [final-result s]))
+      (let [x (flat-map (first args) (fn [arg] (arg s)))]
+        (and x (let [[result new-s] (extract x)]
+                 (reduce-args (rest args) new-s (conj final-result result)))))))
 
 (defn -comp* [mv mvs s]
   (assert (instance? List mvs))
@@ -42,9 +42,7 @@
 
   (apply [fv args]
     (new-sm (fn [s]
-              (let [x (or (and (empty? args)
-                               (maybe [[] s]))
-                          (reduce-args args s []))]
+              (let [x (reduce-args args s [])]
                 (and x (let [[results s] (extract x)
                              y (fv s)]
                          (and y (let [[f s] (extract y)]
