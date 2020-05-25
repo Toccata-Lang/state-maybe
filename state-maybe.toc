@@ -10,20 +10,14 @@
         (and x (let [[result new-s] (extract x)]
                  (reduce-args (rest args) new-s (conj final-result result)))))))
 
-(defn -comp* [mv mvs s]
-  (assert (instance? List mvs))
-
-  (or (mv s)
-      (let [first-mv (first mvs)]
-        (and first-mv (-comp* (extract first-mv) (rest mvs) s)))))
-
 (deftype new-sm [invoke-fn]
   (assert (instance? Fn invoke-fn))
 
   Stringable
-  (string-list [x] (comp (list "<new-sm ")
-                         (string-list (.invoke-fn x))
-                         (list ">")))
+  (string-list [x]
+    (comp (list "<new-sm ")
+          (string-list (.invoke-fn x))
+          (list ">")))
 
   Function
   (invoke [ev s]
@@ -32,18 +26,18 @@
   Container
   (map [mv f]
     (new-sm (fn [s]
-              (let [x (invoke-fn s)]
-                (and x (let [[v new-s] (extract x)]
+              (let [a (invoke-fn s)]
+                (and a (let [[v new-s] (extract a)]
                          (maybe [(f v) new-s])))))))
 
-  (wrap [x v]
+  (wrap [b v]
     (new-sm (fn [s]
               (maybe [v s]))))
 
   (apply [fv args]
     (new-sm (fn [s]
-              (let [x (reduce-args args s [])]
-                (and x (let [[results s] (extract x)
+              (let [c (reduce-args args s [])]
+                (and c (let [[results s] (extract c)
                              y (fv s)]
                          (and y (let [[f s] (extract y)]
                                   (or (and (empty? results)
@@ -52,15 +46,26 @@
 
   (flat-map [ev f]
     (new-sm (fn [s]
-              (let [x (invoke-fn s)]
-                (and x (let [[v ss] (extract x)]
+              (let [d (invoke-fn s)]
+                (and d (let [[v ss] (extract d)]
                          ((f v) ss)))))))
 
   Composition
   (zero [_] (new-sm (fn [_] nothing)))
+
   (comp* [mv mvs]
+    (assert (instance? List mvs))
+
     (new-sm (fn [s]
-              (-comp* mv (seq mvs) s)))))
+              (or (invoke-fn s)
+                  (let [first-mv (first mvs)]
+                    (and first-mv ((comp* (extract first-mv) (rest mvs)) s))))))))
+
+(defprotocol Traversal
+  (traverse [coll f]
+    ;; traverses a Sequence, applying 'f' to each item
+    ;; 'f' must take one value and return a 'state-maybe' value
+    (assert-result x (instance? new-sm x))))
 
 (def state-maybe
   (reify
@@ -83,6 +88,25 @@
 
 (def zero-sm
   (zero state-maybe))
+
+(extend-type Vector
+  Traversal
+  (traverse [coll f]
+    (-> coll
+        reverse
+        (reduce (state-maybe empty-vector)
+                (fn [v x]
+                  (flat-map (f x)
+                            (fn [y]
+                              (map v (fn [v]
+                                       (conj v y)))))))
+        (map reverse))))
+
+(extend-type List
+  Traversal
+  (traverse [coll f]
+    (apply (wrap zero-sm list)
+           (map coll f))))
 
 (defn lift [f]
   (fn [& args]
