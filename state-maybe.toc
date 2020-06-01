@@ -53,13 +53,13 @@
   Composition
   (zero [_] (new-sm (fn [_] nothing)))
 
-  (comp* [mv mvs]
-    (assert (instance? List mvs))
+  (comp* [mv sm-vs]
+    (assert (instance? (list-of new-sm) sm-vs))
 
     (new-sm (fn [s]
               (or (invoke-fn s)
-                  (let [first-mv (first mvs)]
-                    (and first-mv ((comp* (extract first-mv) (rest mvs)) s))))))))
+                  (let [first-mv (first sm-vs)]
+                    (and first-mv ((comp* (extract first-mv) (rest sm-vs)) s))))))))
 
 (defprotocol Traversal
   (traverse [coll f]
