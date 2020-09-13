@@ -12,6 +12,8 @@
 
 (deftype new-sm [invoke-fn]
   (assert (instance? Fn invoke-fn))
+  ;; TODO: enable
+  ;; (assert (function-returns (maybe-of Vector)))
 
   Stringable
   (string-list [x]
@@ -184,12 +186,12 @@
                        (and y (let [[vs s] (extract y)]
                                 (maybe [vs s])))))))))
 
-(defn when [val]
+(defn when [when-val]
   (new-sm (fn [s]
-            (and val (let [v (extract val)]
-                       (maybe [v s]))))))
+            (and when-val (let [v (extract when-val)]
+                            (maybe [v s]))))))
 
-(defn when-not [val]
+(defn when-not [when-not-val]
   (new-sm (fn [s]
-            (and (= nothing val)
+            (and (= nothing when-not-val)
                  (maybe [nothing s])))))
