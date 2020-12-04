@@ -69,16 +69,23 @@
     ;; 'f' must take one value and return a 'state-maybe' value
     (assert-result x (instance? new-sm x))))
 
+(def zero-sm
+  (new-sm (fn [_] nothing)))
+
 (def state-maybe
   (reify
     Type
     (type-name [_]
       "*state-maybe wrapper*")
 
-    Container
-    (apply [_ [v]]
-      (new-sm (fn [s]
-                (maybe [v s]))))
+    (instance? [_ x]
+      (instance? new-sm x))
+
+    Composition
+    (comp* [sm fs]
+      (comp* (fn [x]
+               (invoke sm x))
+             fs))
 
     Function
     (invoke [_ v]
@@ -86,29 +93,17 @@
                 (maybe [v s]))))
 
     Composition
-    (zero [_] (new-sm (fn [_] nothing)))))
-
-(def zero-sm
-  (zero state-maybe))
+    (zero [_] zero-sm)))
 
 (extend-type Vector
   Traversal
   (traverse [coll f]
-    (-> coll
-        reverse
-        (reduce (state-maybe empty-vector)
-                (fn [v x]
-                  (flat-map (f x)
-                            (fn [y]
-                              (map v (fn [v]
-                                       (conj v y)))))))
-        (map reverse))))
+    (map coll f state-maybe)))
 
 (extend-type List
   Traversal
   (traverse [coll f]
-    (apply (wrap zero-sm list)
-           (map coll f))))
+    (map coll f state-maybe)))
 
 (defn lift [f]
   (fn [& args]
@@ -136,6 +131,10 @@
 (defn set-val [k v]
   (new-sm (fn [s]
             (maybe [nothing (assoc s k v)]))))
+
+(defn dissoc-val [k]
+  (new-sm (fn [s]
+            (maybe [nothing (dissoc s k)]))))
 
 (defn get-in-val
   ([path]
